@@ -1,12 +1,13 @@
 class User < ApplicationRecord
+  before_save { self.email.downcase! }
   validates :name, presence: true, length: { maximum: 50 }
   validates :email, presence: true, length: { maximum: 255 },
                     format: { with: /\A[\w+\-.]+@[a-z\d\-.]+\.[a-z]+\z/i },
                     uniqueness: { case_sensitive: false }
   has_secure_password
-  
-  has_many :microposts
-  has_many :relationships
+
+  has_many :microposts, dependent: :destroy
+  has_many :relationships 
   has_many :followings, through: :relationships, source: :follow
   has_many :reverses_of_relationship, class_name: 'Relationship', foreign_key: 'follow_id'
   has_many :followers, through: :reverses_of_relationship, source: :user
@@ -28,5 +29,24 @@ class User < ApplicationRecord
   
   def feed_microposts
     Micropost.where(user_id: self.following_ids + [self.id])
+  end
+  
+  def feed_favorites
+    Micropost.where(micropost_id: self.favorite_ids + [self.id])
+  end
+  
+  has_many :favorites
+  has_many :likes, through: :favorites, source: :micropost
+  
+  def like(micropost)
+    favorites.find_or_create_by(micropost_id: micropost.id)
+  end
+  
+  def unlike(micropost)
+    favorites.find_by(micropost_id: micropost.id).destroy
+  end
+  
+  def likes?(micropost)
+    self.favorites.where(micropost_id: micropost.id).exists?
   end
 end

@@ -3,6 +3,8 @@ class ToppagesController < ApplicationController
     if logged_in?
       @micropost = current_user.microposts.build
       @microposts = current_user.feed_microposts.order(id: :desc).page(params[:page])
+      @favorite = current_user.favorites.build
+      @favorites = current_user.feed_favorites.order(id: :desc).page(params[:page])
     end
   end
 end
